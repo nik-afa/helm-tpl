@@ -1,0 +1,33 @@
+# name: helm-push
+
+# on: 
+#   push:
+#     tags:
+#       - '*'
+
+# jobs:
+#   push:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout
+#         id: checkout
+#         uses: actions/checkout@v3
+#       - name: Push charts to repository
+#         id: push-chart
+#         uses: azure/setup-helm@v3
+#       - run: |
+#           helm repo add chartmuseum https://chartmuseum.domain.com/ --username $CHART_MUSEUM_USER --password $CHART_MUSEUM_PASSWORD
+#           helm plugin install https://github.com/chartmuseum/helm-push
+#           VERSION=$(echo $GITHUB_REF | sed -nE 's!refs/tags/!!p')
+#           helm cm-push --force --version="$VERSION" ./chart chartmuseum
+#         env:
+#           CHART_MUSEUM_USER: ${{ secrets.CHART_MUSEUM_USER }}
+#           CHART_MUSEUM_PASSWORD: ${{ secrets.CHART_MUSEUM_PASSWORD }}
+#       - name: Slack Notification
+#         uses: act10ns/slack@v2
+#         with:
+#           webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+#           status: ${{ job.status }}
+#           steps: ${{ toJson(steps) }}
+#           channel: '#git-notifies'
+#         if: failure()

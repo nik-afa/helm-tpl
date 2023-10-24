@@ -1,0 +1,54 @@
+{{ with .Values }}
+{{- if .service }}
+{{- $svcPort := .service.port }}
+{{ range $location,$value := .ingress }}
+---
+{{- if semverCompare ">=1.14-0" $.Capabilities.KubeVersion.GitVersion }}
+apiVersion: networking.k8s.io/v1
+{{- else -}}
+apiVersion: extensions/v1beta1
+{{- end }}
+kind: Ingress
+metadata:
+  name: {{ tpl ($location | toString) $ }}
+  labels:
+    helm.sh/chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
+    app.kubernetes.io/name: {{ $.Release.Name }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+    app.kubernetes.io/version: {{ $.Chart.AppVersion }}
+    app.kubernetes.io/managed-by: Helm
+  {{- with .annotations }}
+  annotations:
+    {{- tpl (toYaml .) $ | nindent 4 }}
+  {{- end }}
+spec:
+{{- if .tls }}
+  tls:
+  {{- range .tls }}
+    - hosts:
+      {{- range .hosts }}
+        - {{ . | quote }}
+      {{- end }}
+      secretName: {{ .secretName }}
+  {{- end }}
+{{- end }}
+  ingressClassName: {{ tpl .ingressClassName $ }}
+  rules:
+  {{- range .hosts }}
+    - host: {{ tpl .host $ | quote }}
+      http:
+        paths:
+        {{- range .paths }}
+          - path: {{ tpl .path $ }}
+            pathType: {{ .pathType }}
+            backend:
+              service: 
+                name: {{ tpl .backend.serviceName $ }}
+                port: 
+                  number: {{ .backend.servicePort }} 
+        {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}
+---
+{{- end }}

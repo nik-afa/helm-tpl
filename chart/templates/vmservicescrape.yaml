@@ -1,0 +1,58 @@
+{{ with .Values }}
+{{- if index . "serviceMonitor" }}
+{{- if eq true .serviceMonitor.enabled }}
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMServiceScrape
+metadata:
+  name: {{ $.Release.Name }}-victoria
+  {{- if .serviceMonitor.namespace }}
+  namespace: {{ .serviceMonitor.namespace }}
+  {{- end }}
+  labels: 
+    helm.sh/chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
+    app.kubernetes.io/name: {{ $.Release.Name }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+    app.kubernetes.io/version: {{ $.Chart.AppVersion }}
+    app.kubernetes.io/managed-by: Helm
+    {{- if .serviceMonitor.additionalLabels }}
+{{ toYaml .serviceMonitor.additionalLabels | indent 4 }}
+    {{- end }}
+spec:
+  endpoints:
+    - attach_metadata: {}
+      {{- if .serviceMonitor.interval }}
+      interval: {{ .serviceMonitor.interval }}
+      {{- else }}
+      interval: 30s
+      {{- end }}
+      {{- if .serviceMonitor.path }}
+      path: {{ .serviceMonitor.path }}
+      {{- end }}
+      port: metrics
+      {{- if .serviceMonitor.scrapeTimeout }}
+      scrapeTimeout: {{ .serviceMonitor.scrapeTimeout }}
+      {{- else }}
+      scrapeTimeout: 30s
+      {{- end }}
+      {{- if .serviceMonitor.metricRelabelConfigs }}
+      metricRelabelConfigs: {{- toYaml .serviceMonitor.metricRelabelConfigs | nindent 8 }}
+      {{- end }}
+      {{- if .serviceMonitor.honorLabels }}
+      honorLabels: {{ .serviceMonitor.honorLabels }}
+      {{- end }}
+      {{- if .serviceMonitor.params }}
+      params:
+      {{- toYaml .serviceMonitor.params | nindent 10 }}
+      {{- end }}
+  namespaceSelector:
+    matchNames:
+      - {{ $.Release.Namespace }}
+  selector:
+    matchLabels: 
+      app.kubernetes.io/name: {{ $.Release.Name }}
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+
+{{- end }}
+{{- end }}
+---
+{{- end }}

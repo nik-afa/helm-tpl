@@ -1,0 +1,23 @@
+{{ with .Values }}
+{{- if index . "enabled" }}
+{{- if eq "true" .enabled }}
+{{- if .pv }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ $.Release.Name }}
+spec:
+  capacity:
+    storage: {{ .pv.size | quote }}
+  volumeMode: {{ .pv.volumeMode }}
+  accessModes:
+    - {{ .pv.accessMode | quote }}
+  persistentVolumeReclaimPolicy: {{ .pv.policy }}
+  storageClassName: {{ .pv.storageClass }}
+  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: {{ .pv.volumeHandle }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

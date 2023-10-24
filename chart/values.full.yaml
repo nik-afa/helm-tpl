@@ -1,0 +1,302 @@
+# Default values for example.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+enabled: "true"
+replicaCount: 1
+
+image:
+  repository: owasp/modsecurity-crs
+  tag: "latest"
+  pullPolicy: IfNotPresent
+# imagePullSecrets:
+#   - name: image-pull-secret
+
+serviceAccount:
+  create: false
+  # annotations:
+  #   helm.sh/hook: pre-install
+  #   helm.sh/hook-weight: "-10"
+  # name:
+### dont create SA, for pre hook with vault would be used SA default
+
+# podAnnotations:
+#   vault.security.banzaicloud.io/vault-addr: "https://vault.domain.com"
+#   vault.security.banzaicloud.io/vault-skip-verify: "true"
+#   vault.security.banzaicloud.io/vault-path: kubernetes-dev
+#   vault.security.banzaicloud.io/vault-role: dev
+
+# hookJob:
+#   - name: db-migration-python
+#     hook: pre-install,pre-upgrade
+#     hook_weight: "-5"
+#     hook_delete_policy: hook-succeeded
+#     cmd: "poetry run python manage.py migrate"
+#     sharedmounts: true
+#     podAnnotations:
+#       vault.security.banzaicloud.io/vault-addr: "https://vault.domain.com"
+#       vault.security.banzaicloud.io/vault-skip-verify: "true"
+#       vault.security.banzaicloud.io/vault-path: kubernetes-dev
+#       vault.security.banzaicloud.io/vault-role: dev
+#       vault.security.banzaicloud.io/vault-env-from-path: "dev/data/name_service/path"
+#     securityContext:
+#       enabled: false
+#       runAsUser: 1000
+#       runAsGroup: 1000
+#       fsGroup: 1000
+#     resources:
+#       requests:
+#         memory: 128Mi
+#   - name: db-migration-php
+#     hook: pre-install,pre-upgrade
+#     hook_weight: "-3"
+#     hook_delete_policy: hook-succeeded
+#     cmd: "php artisan migrate -n --force"
+#     sharedmounts: true
+#     podAnnotations:
+#       vault.security.banzaicloud.io/vault-addr: "https://vault.domain.com"
+#       vault.security.banzaicloud.io/vault-skip-verify: "true"
+#       vault.security.banzaicloud.io/vault-path: kubernetes-stage
+#       vault.security.banzaicloud.io/vault-role: stage
+#       vault.security.banzaicloud.io/vault-env-from-path: "stage/data/name_service/path"
+#     securityContext:
+#       enabled: false
+#       runAsUser: 1000
+#       runAsGroup: 1000
+#       fsGroup: 1000
+#     resources:
+#       requests:
+#         memory: 128Mi
+
+podSecurityContext: {}
+securityContext: {}
+lifecycle: {}
+# lifecycle:
+#   preStop:
+#     exec:
+#       command:
+#         [
+#          "/bin/sh",
+#           "-c",
+#           "mkdir -p /storage/app/data && chown -R www-data:www-data /storage/",
+#        ]
+statefullSet: false
+### only work in statefullset , this need for statefullSet
+# podManagementPolicy: OrderedReady
+# updateStrategy:
+#   type: OnDelete
+
+### only work in statefullset volumeClaimTemplates
+# persistence:
+#   accessMode: ReadWriteOnce
+#   name: data
+#   size: "4Gi"
+#   # storageClass: "gp2"
+
+## check _helpers.tpl
+# nameOverride: "test"
+# fullnameOverride: "test2"
+
+# command: ["sh", "-c", "echo hello"]
+# command:
+#   - sh
+# args:
+#   - -c
+#   - echo hello
+
+# extraEnv:
+#   LOG_LEVEL:
+#     value: "info"
+
+# extraPorts:
+#     - name: smtp
+#       containerPort: 3025
+#       protocol: TCP
+# livenessProbe:
+#    tcpSocket:
+#      port: 8080
+# readinessProbe:
+#    tcpSocket:
+#      port: 8080
+# livenessProbe:
+#    httpGet:
+#      path: /
+#      port: http
+# readinessProbe:
+#    httpGet:
+#      path: /
+#      port: http
+# extraInitContainers: |
+#    - name: initcontainer
+#      image: busybox:latest
+#      command: ["sh", "-c", "echo hello"]
+
+
+
+# extraContainers: |
+#   - name: metrics
+#     image: hipages/php-fpm_exporter:2.2.0
+#     imagePullPolicy: IfNotPresent
+#     # command: {}
+#     ports:
+#       - name: metrics
+#         containerPort: 9253
+#     livenessProbe:
+#       httpGet:
+#         path: /metrics
+#         port: metrics
+#       initialDelaySeconds: 15
+#       timeoutSeconds: 5
+#     readinessProbe:
+#       httpGet:
+#         path: /metrics
+#         port: metrics
+#       initialDelaySeconds: 5
+#       timeoutSeconds: 1
+#     resources:
+#       requests:
+#         cpu: "300m"
+#         memory: "128Mi"
+#       limits:
+#         cpu: "500m"
+#         memory: "512Mi"
+# extraService:
+#   - name: metrics
+#     protocol: TCP
+#     port: 9253
+#     targetPort: metrics
+
+### Victoria Metrics
+# serviceMonitor:
+#   enabled: true
+#   path: /metrics
+#   params: {}
+
+# volumes:
+#    - name: environment
+#      configMap:
+#        name: http-config
+#        items:
+#        - key: config
+#          path: config.yaml
+# volumeMounts:
+#    - name: environment
+#      mountPath: /data/config.yaml
+#      subPath: config.yaml
+#    - name: data
+#      mountPath: /datapvc/
+
+
+# cronjobs:
+#   - name: backup
+#     cmd: "chmod +x /opt/backup.sh && /bin/sh /opt/backup.sh"
+#     ### if image not specified, then the same image is used as in the main chart
+#     image: busybox:latest
+#     schedule: "10 1 * * *"
+#     concurrencyPolicy: Forbid
+#     sharedmounts: true
+#     env:
+#       DB_PASS:
+#         value: "${vault:prod/data/rds/prod#password}"
+#       DB_HOST:
+#         value: db.domain.com
+
+# configmap:
+#   key: |-
+#      value:dfas
+#   key2: value2
+
+# secret:
+#   cert:
+#     type: kubernetes.io/tls
+#     data:
+#       key: 123
+#       crt: 456
+#     annotations:
+#       helm.sh/hook: pre-install, pre-upgrade
+#       helm.sh/hook-weight: "-10"
+#   password:
+#     type: Opaque
+#     data:
+#       key: test
+
+# service:
+#   name: metrics
+#   type: ClusterIP
+#   port: 8080
+
+
+### ingress for multiple different backends in paths
+# ingress:
+#   dev:
+#     annotations:
+#       alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443},{"HTTP":80}]'
+#     ingressClassName: alb
+#     hosts:
+#       - host: dev.domain.com
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               serviceName: dev
+#               servicePort: 8000
+#           - path: /static
+#             pathType: Prefix
+#             backend:
+#               serviceName: static
+#               servicePort: 80
+#     tls:
+#       - secretName: domain.com
+#         hosts:
+#           - dev.domain.com
+#   dev-ext:
+#     annotations:
+#       alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443},{"HTTP":80}]'
+#     ingressClassName: alb
+#     hosts:
+#       - host: dev-ext.domain.com
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               serviceName: dev
+#               servicePort: 8000
+#           - path: /static
+#             pathType: Prefix
+#             backend:
+#               serviceName: static
+#               servicePort: 80
+#     tls:
+#       - secretName: dev-ext.domain.com
+#         hosts:
+#           - dev-ext.domain.com
+
+# externalService:
+#   name: "dev-bucket"
+#   type: ExternalName
+#   port: 80
+#   externalName: bucket-name.s3-website.region.amazonaws.com
+
+# autoscaling:
+#   enabled: true
+#   minReplicas: 1
+#   maxReplicas: 5
+#   targetCPUUtilizationPercentage: 80
+#   # targetMemoryUtilizationPercentage: 80
+#   metrics: |
+#     - type: Pods
+#       pods:
+#         metricName: memory_usage_bytes
+#         targetAverageValue: 1024000
+resources:
+  requests:
+    cpu: "300m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+# default termination 30 sec
+terminationGracePeriodSeconds: 120
+nodeSelector: {}
+tolerations: []
+affinity: {}

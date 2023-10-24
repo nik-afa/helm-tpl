@@ -1,0 +1,36 @@
+{{ with .Values }}
+{{- if index . "enabled" }}
+{{- if eq "true" .enabled }}
+{{- if .pvc }}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ $.Release.Name }}
+ {{- with .pvc.annotations  }} 
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+  labels:
+    helm.sh/chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
+    app.kubernetes.io/name: {{ $.Release.Name }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+    app.kubernetes.io/version: {{ $.Chart.AppVersion }}
+    app.kubernetes.io/managed-by: Helm
+spec:
+  accessModes:
+    - {{ .pvc.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .pvc.size | quote }}
+{{- if .pvc.storageClass }}
+{{- if (eq "-" .pvc.storageClass) }}
+  storageClassName: ""
+{{- else }}
+  storageClassName: {{ .pvc.storageClass | quote }}
+  volumeName: {{ .pvc.volumeName | quote }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

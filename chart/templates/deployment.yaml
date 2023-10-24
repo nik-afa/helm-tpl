@@ -1,0 +1,151 @@
+{{ with .Values }}
+{{- if index . "enabled" }}
+{{- if eq "true" .enabled }}
+apiVersion: apps/v1
+{{- if eq false .statefullSet }}
+kind: Deployment
+{{ end }}
+{{- if eq true .statefullSet }}
+kind: StatefulSet
+{{ end }}
+metadata:
+  name: {{ $.Release.Name }}
+  labels:
+    helm.sh/chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
+    app.kubernetes.io/name: {{ $.Release.Name }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+    app.kubernetes.io/version: {{ $.Chart.AppVersion }}
+    app.kubernetes.io/managed-by: Helm
+spec:
+{{- if eq true .statefullSet }}
+  serviceName: {{ $.Release.Name }}
+{{ end }}
+  replicas: {{ .replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $.Release.Name }}
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+  template:
+    metadata:
+      annotations:
+        {{- range $key, $value := .podAnnotations }}
+        {{   $key }}: {{ $value | quote }}
+        {{- end }}
+        {{ if $.configmap -}}
+        checksum/config: {{ $.configmap | sha256sum }}
+        {{- end }}
+      labels:
+        app.kubernetes.io/name: {{ $.Release.Name }}
+        app.kubernetes.io/instance: {{ $.Release.Name }}
+    spec:
+    {{- with .imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- if eq true .serviceAccount.create }}
+      serviceAccountName: {{ .serviceAccount.name | default $.Release.Name }}
+    {{- end }}
+      securityContext:
+        {{- toYaml .podSecurityContext | nindent 8 }}
+      volumes:
+{{ if .volumes -}}
+{{ tpl (toYaml .volumes) $ | trim | indent 8 }}
+{{- end }}
+      containers:
+        {{- if .extraContainers }}
+{{ tpl .extraContainers $ | indent 8 }}
+        {{- end }}      
+        - name: {{ $.Release.Name }}
+          securityContext:
+            {{- toYaml .securityContext | nindent 12 }}
+          image: {{ tpl .image.repository $ }}:{{ .image.tag | default $.Chart.AppVersion }}
+          imagePullPolicy: {{ .image.pullPolicy }}
+          lifecycle:
+{{ if .lifecycle -}}
+{{ toYaml .lifecycle | trim | indent 12 }}
+{{- end }}
+          env:
+{{- range $ev_key, $ev_value :=  .extraEnv }}
+{{- if (typeIs "string" $ev_value) }}
+          - name: {{ $ev_key }}
+            value: {{ $ev_value | quote }}
+{{- else }}
+          - name: {{ $ev_key }}
+{{ toYaml $ev_value | indent 12 }}
+{{- end }}
+{{- end }}
+{{- if index . "service" }}
+          command:
+            {{ toYaml .command | nindent 12 }}
+          args:
+            {{ toYaml .args | nindent 12 }}
+          ports:
+         {{- if .service.name }}
+            - name: {{ .service.name }}
+         {{- else }}
+            - name: http
+         {{- end }}
+              containerPort: {{ .service.port }}
+              protocol: TCP
+{{- end }}
+{{ if .extraPorts -}}
+{{ toYaml .extraPorts | trim | indent 12 }}
+{{- end }}
+          livenessProbe:
+{{ if .livenessProbe -}}
+{{ toYaml .livenessProbe | trim | indent 12 }}
+{{- end }}
+          readinessProbe:
+{{ if .readinessProbe -}}
+{{ toYaml .readinessProbe | trim | indent 12 }}
+{{- end }}
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+          volumeMounts:
+{{ if .volumeMounts -}}
+{{ toYaml .volumeMounts | trim | indent 12 }}
+{{- end }}
+      terminationGracePeriodSeconds: {{  .terminationGracePeriodSeconds | default 30  }}
+      {{- with .nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      initContainers:
+        {{- if .extraInitContainers }}
+{{ tpl .extraInitContainers $ | indent 8 }}
+        {{- end }}
+{{- if eq true .statefullSet }}
+  podManagementPolicy: {{ .podManagementPolicy }}
+  updateStrategy:
+    type: {{ .updateStrategy.type }}
+{{- end }}
+  {{- if index . "persistence" }}
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ .persistence.name }}
+    spec:
+      accessModes:
+        - {{ .persistence.accessMode | quote }}
+    {{- if .persistence.storageClass }}
+    {{- if (eq "-" .persistence.storageClass) }}
+      storageClassName: ""
+    {{- else }}
+      storageClassName: "{{ .persistence.storageClass }}"
+    {{- end }}
+    {{- end }}
+      resources:
+        requests:
+          storage: "{{ .persistence.size }}"
+  {{ end }}
+{{- end }}
+{{- end }}
+---
+{{- end }}

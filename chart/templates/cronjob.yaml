@@ -1,0 +1,71 @@
+{{ with .Values }}
+{{- if index . "enabled" }}
+{{- if eq "true" .enabled }}
+{{ range $cron_name,$cron_value := .cronjobs }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ $cron_value.name }}
+  annotations:
+    {{- range $key, $value := $.Values.podAnnotations }}
+    {{   $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  schedule: {{ .schedule | quote }}
+  concurrencyPolicy: {{ .concurrencyPolicy }}
+  jobTemplate:
+    spec:
+{{- if .activeDeadlineSeconds }}
+      activeDeadlineSeconds: "{{ .activeDeadlineSeconds }}"
+{{- end }}
+      template:
+        metadata:
+          annotations:
+            {{- range $key, $value := $.Values.podAnnotations }}
+            {{   $key }}: {{ $value | quote }}
+            {{- end }}
+          labels:
+        spec:
+        {{- with $.Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
+          volumes:
+        {{- if default false .sharedmounts }}
+{{ if $.Values.volumes -}}
+{{ toYaml $.Values.volumes | trim | indent 12 }}
+{{- end }}
+        {{- end }}
+          containers:
+          - name: {{ $.Release.Name }}
+            {{ if not .image -}}
+            image:  "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
+            {{ else }}
+            image: "{{ .image }}"
+            {{- end }}
+            volumeMounts:
+            {{- if default false .sharedmounts }}
+{{ if $.Values.volumeMounts -}}
+{{ toYaml $.Values.volumeMounts | trim | indent 12 }}
+{{- end }}
+            {{- end }}
+            env:
+{{- range $ev_key, $ev_value :=  .env }}
+{{- if (typeIs "string" $ev_value) }}
+            - name: {{ $ev_key }}
+              value: {{ $ev_value | quote }}
+{{- else }}
+            - name: {{ $ev_key }}
+{{ toYaml $ev_value | indent 14 }}
+{{- end }}
+{{- end }}
+            args:
+              - /bin/sh
+              - -c
+              - {{ .cmd }}
+          restartPolicy: OnFailure
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
